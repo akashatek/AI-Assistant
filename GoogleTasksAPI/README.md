@@ -128,12 +128,19 @@ CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
 ### How to use this Dockerfile
 
 1.  **Save the file:** Save the code above as `Dockerfile` in your project's root directory.
+
 2.  **Build the image:** Open your terminal in the project directory and run the following command to build your Docker image.
     ```bash
     docker build -t akashatek/google-tasks-api:v1.00 .
+    docker push akashatek/google-tasks-api:v1.00
     ```
 3.  **Run the container:** Once the image is built, you can run it as a container.
     ```bash
     docker run -d --name google-tasks-api -p 8000:8000 akashatek/google-tasks-api:v1.00
     ```
       - `-p 8000:8000`: This maps port 8000 on your local machine to port 8000 inside the container, allowing you to access the API at `http://localhost:8000`.
+
+4.  **Run the deployment:** Once the image is built, you can run it as a container.
+    ```bash
+    docker-compose up -d
+    ```

@@ -1,68 +1,78 @@
 # api.py
-from fastapi import FastAPI, HTTPException, Body, Depends
+from fastapi import FastAPI, HTTPException, Body, Query
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
-from typing import Optional
 from google_tasks import GoogleTasks
 
-# Define Pydantic models for request bodies
-class CreateTaskRequest(BaseModel):
+# Initialize FastAPI app
+app = FastAPI(title="Google Tasks API")
+
+# Initialize Google Tasks service
+google_tasks_tool = GoogleTasks()
+
+# Pydantic Models for request body validation
+class TaskCreate(BaseModel):
     title: str
     notes: Optional[str] = None
     due_date: Optional[str] = None
 
-class UpdateTaskRequest(BaseModel):
+class TaskUpdate(BaseModel):
     title: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[str] = None
     due_date: Optional[str] = None
+    
+# Root endpoint
+@app.get("/", tags=["Health"])
+def read_root():
+    return {"message": "Google Tasks API is running."}
 
-# Main FastAPI application instance
-app = FastAPI(
-    title="Google Tasks API",
-    description="A simple RESTful API for managing Google Tasks.",
-    version="1.0.0"
-)
-
-# Initialize the Google Tasks service
-google_tasks_tool = GoogleTasks()
-
-# API Endpoints
-@app.get("/tasks", tags=["Tasks"])
-def list_tasks(due_date: Optional[str] = None):
-    """
-    List all tasks from the default list, with optional filtering by due date.
-    """
-    result = google_tasks_tool.list_all_tasks(due_date)
-    if "error" in result:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
+# --- Tasks Endpoints ---
 
 @app.post("/tasks", tags=["Tasks"])
-def create_task(task_data: CreateTaskRequest = Body(...)):
+def create_task(task: TaskCreate):
     """
     Create a new task.
     """
     result = google_tasks_tool.create_task(
-        title=task_data.title,
-        notes=task_data.notes,
-        due_date=task_data.due_date
+        title=task.title, notes=task.notes, due_date=task.due_date
     )
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+@app.get("/tasks", tags=["Tasks"])
+def list_tasks(due_date: Optional[str] = Query(None)):
+    """
+    List all tasks, optionally filtered by due date.
+    """
+    # The Google Tasks API requires a timezone offset for due dates
+    # We will pass the date as is and let the API handle the timezone.
+    result = google_tasks_tool.list_tasks(due_date=due_date)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.get("/tasks/{task_id}", tags=["Tasks"])
+def read_task(task_id: str):
+    """
+    Read a single task by its ID.
+    """
+    result = google_tasks_tool.get_task_by_id(task_id=task_id)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
 @app.patch("/tasks/{task_id}", tags=["Tasks"])
-def update_task(task_id: str, task_data: UpdateTaskRequest = Body(...)):
+def update_task(task_id: str, task: TaskUpdate):
     """
-    Update a task's details.
+    Update a task.
     """
-    result = google_tasks_tool.update_task(
-        task_id=task_id,
-        title=task_data.title,
-        notes=task_data.notes,
-        status=task_data.status,
-        due_date=task_data.due_date
-    )
+    update_data = task.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided to update.")
+        
+    result = google_tasks_tool.update_task(task_id=task_id, **update_data)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
@@ -78,15 +88,11 @@ def delete_task(task_id: str):
     return result
 
 @app.get("/tasks/search", tags=["Tasks"])
-def search_tasks(query: str, due_date: Optional[str] = None):
+def search_tasks(query: str = Query(...), due_date: Optional[str] = Query(None)):
     """
-    Search for tasks by title within the default list, with optional filtering.
+    Search for tasks by title and an optional due date.
     """
-    result = google_tasks_tool.search_tasks_by_title(query, due_date)
+    result = google_tasks_tool.search_tasks(query=query, due_date=due_date)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
-
-@app.get("/", tags=["Root"])
-def read_root():
-    return {"message": "Welcome to the simple Google Tasks API! Go to /docs for the API reference."}

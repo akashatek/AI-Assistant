@@ -1,0 +1,13 @@
+name: acp
+
+services:
+  google-task-api:
+    image: akashatek/google-tasks-api:v1.00
+    ports:
+      - "8000:8000" # Or your desired port
+    networks:
+      - acp
+
+networks:
+  acp:
+    name: acp
