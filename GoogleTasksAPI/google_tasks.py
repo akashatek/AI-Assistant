@@ -58,15 +58,20 @@ class GoogleTasks:
             return None
 
     def create_task(self, title: str, notes: Optional[str], due_date: Optional[str]) -> Dict[str, Any]:
+        """Creates a new task."""
         if not self.service or not self.default_tasklist_id:
             return {"error": "Failed to create task. Service or default task list not available."}
         
-        task = {"title": title, "notes": notes}
+        task = {"title": title}
+        if notes:
+            task["notes"] = notes
         
         if due_date:
             try:
+                # Convert YYYY-MM-DD to ISO format required by the API
                 dt_object = datetime.strptime(due_date, "%Y-%m-%d")
-                task['due'] = dt_object.isoformat() + 'Z'
+                # Add a time part (00:00:00) and convert to Zulu time 'Z'
+                task['due'] = dt_object.isoformat() + '.000Z'
             except ValueError:
                 return {"error": "Invalid date format. Please use YYYY-MM-DD."}
 
@@ -78,32 +83,51 @@ class GoogleTasks:
         except HttpError as error:
             return {"error": f"An error occurred: {error}"}
 
-    def update_task(self, task_id: str, title: Optional[str], notes: Optional[str], status: Optional[str], due_date: Optional[str]) -> Dict[str, Any]:
+    def update_task(
+        self,
+        task_id: str,
+        title: Optional[str] = None,
+        notes: Optional[str] = None,
+        status: Optional[str] = None,
+        due_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Updates a Google Task. Only provided fields are updated."""
         if not self.service or not self.default_tasklist_id:
-            return {"error": "Failed to update task. Service or default task list not available."}
+            return {"error": "Service or default task list not available."}
 
-        updated_task = {}
-        if title: updated_task['title'] = title
-        if notes: updated_task['notes'] = notes
-        if status in ['needsAction', 'completed']: updated_task['status'] = status
-        
-        if due_date:
+        update_body = {}
+        if title is not None:
+            update_body['title'] = title
+        if notes is not None:
+            update_body['notes'] = notes
+        if status is not None:
+            update_body['status'] = status
+        if due_date is not None:
+            # Convert YYYY-MM-DD to ISO format for the 'due' field
             try:
                 dt_object = datetime.strptime(due_date, "%Y-%m-%d")
-                updated_task['due'] = dt_object.isoformat() + 'Z'
+                update_body['due'] = dt_object.isoformat() + '.000Z'
             except ValueError:
-                return {"error": "Invalid date format. Please use YYYY-MM-DD."}
+                return {"error": "Invalid date format for due date. Please use YYYY-MM-DD."}
 
+        if not update_body:
+            return {"warning": "No fields provided to update."}
+        
         try:
-            self.service.tasks().patch(
-                tasklist=self.default_tasklist_id, task=task_id, body=updated_task
+            # Use patch() for partial updates
+            updated_task = self.service.tasks().patch(
+                tasklist=self.default_tasklist_id,
+                task=task_id,
+                body=update_body
             ).execute()
-            return {"message": f"Task {task_id} updated successfully."}
+            return {"message": f"Task {task_id} updated successfully.", "task": updated_task}
         except HttpError as error:
             return {"error": f"An error occurred: {error}"}
 
-    def list_all_tasks(self, due_date: Optional[str]) -> Dict[str, Any]:
-        tasks = self._list_raw_tasks()
+
+    def list_tasks(self, due_date: Optional[str]) -> Dict[str, Any]:
+        """Lists tasks, optionally filtered by due date."""
+        tasks = self._list_all_raw_tasks()
         if "error" in tasks:
             return tasks
 
@@ -111,17 +135,24 @@ class GoogleTasks:
         
         if due_date:
             try:
+                # Convert input YYYY-MM-DD to a standard comparison string
                 due_date_str = datetime.strptime(due_date, "%Y-%m-%d").strftime("%Y-%m-%d")
-                filtered_tasks = [
-                    task for task in filtered_tasks
-                    if 'due' in task and datetime.fromisoformat(task['due'].replace('Z', '')).strftime("%Y-%m-%d") == due_date_str
-                ]
+                
+                filtered_tasks = []
+                for task in tasks:
+                    if 'due' in task:
+                        # Parse the ISO date from the task and compare
+                        task_due_date = datetime.fromisoformat(task['due'].replace('Z', '')).strftime("%Y-%m-%d")
+                        if task_due_date == due_date_str:
+                            filtered_tasks.append(task)
+                            
             except ValueError:
                 return {"error": "Invalid date format for filtering. Please use YYYY-MM-DD."}
         
         return {"tasks": filtered_tasks}
 
-    def _list_raw_tasks(self) -> Dict[str, Any]:
+    def _list_all_raw_tasks(self) -> Dict[str, Any]:
+        """Internal method to fetch all tasks without filtering."""
         if not self.service or not self.default_tasklist_id:
             return {"error": "Failed to list tasks. Service or default task list not available."}
         
@@ -133,6 +164,7 @@ class GoogleTasks:
             return {"error": f"An error occurred: {error}"}
 
     def delete_task(self, task_id: str) -> Dict[str, Any]:
+        """Deletes a task by ID."""
         if not self.service or not self.default_tasklist_id:
             return {"error": "Failed to delete task. Service or default task list not available."}
         
@@ -144,11 +176,27 @@ class GoogleTasks:
         except HttpError as error:
             return {"error": f"An error occurred: {error}"}
 
-    def search_tasks_by_title(self, query: str, due_date: Optional[str]) -> Dict[str, Any]:
-        tasks_result = self.list_all_tasks(due_date)
+    def search_tasks(self, query: str, due_date: Optional[str]) -> Dict[str, Any]:
+        """Searches for tasks by title, optionally filtered by due date."""
+        tasks_result = self.list_tasks(due_date)
         if "error" in tasks_result:
             return tasks_result
         
         tasks = tasks_result.get("tasks", [])
         matching_tasks = [task for task in tasks if query.lower() in task.get('title', '').lower()]
         return {"tasks": matching_tasks}
+
+    def get_task_by_id(self, task_id: str) -> Dict[str, Any]:
+        """Retrieves a single task by its ID."""
+        if not self.service or not self.default_tasklist_id:
+            return {"error": "Failed to retrieve task. Service or default task list not available."}
+
+        try:
+            task = self.service.tasks().get(
+                tasklist=self.default_tasklist_id, task=task_id
+            ).execute()
+            return {"task": task}
+        except HttpError as error:
+            if error.resp.status == 404:
+                 return {"error": f"Task with ID {task_id} not found."}
+            return {"error": f"An error occurred: {error}"}

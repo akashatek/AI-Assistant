@@ -12,7 +12,7 @@ from langgraph.graph import StateGraph, END
 from tools import create_task, update_task, delete_task, list_tasks, search_tasks, read_task, parse_date, CreateTaskInput, UpdateTaskInput, DeleteTaskInput, ListTasksInput, SearchTasksInput, ReadTaskInput, ParseDateInput
 
 # 1. Define LLM, Tools, and Agent outside the graph nodes
-os.environ["OLLAMA_BASE_URL"] = "http://localhost:11434"
+os.environ["OLLAMA_BASE_URL"] = "http://batman.local:11434"
 llm = OllamaLLM(model="llama3.2:1b", temperature=0.0)
 
 tools = [

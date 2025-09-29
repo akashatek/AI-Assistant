@@ -29,6 +29,7 @@ def read_root():
 
 # --- Tasks Endpoints ---
 
+
 @app.post("/tasks", tags=["Tasks"])
 def create_task(task: TaskCreate):
     """
@@ -49,6 +50,16 @@ def list_tasks(due_date: Optional[str] = Query(None)):
     # The Google Tasks API requires a timezone offset for due dates
     # We will pass the date as is and let the API handle the timezone.
     result = google_tasks_tool.list_tasks(due_date=due_date)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.get("/tasks/search", tags=["Tasks"])
+def search_tasks(query: str = Query(...), due_date: Optional[str] = Query(None)):
+    """
+    Search for tasks by title and an optional due date.
+    """
+    result = google_tasks_tool.search_tasks(query=query, due_date=due_date)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
@@ -84,15 +95,5 @@ def delete_task(task_id: str):
     """
     result = google_tasks_tool.delete_task(task_id=task_id)
     if "error" in result:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
-
-@app.get("/tasks/search", tags=["Tasks"])
-def search_tasks(query: str = Query(...), due_date: Optional[str] = Query(None)):
-    """
-    Search for tasks by title and an optional due date.
-    """
-    result = google_tasks_tool.search_tasks(query=query, due_date=due_date)
-    if "error" in result:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
+        raise HTTPException(status_code=500, detail=result["error"]) # This handles the error case
+    return result # This returns a 200 on success
