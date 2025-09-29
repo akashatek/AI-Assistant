@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 import dateparser
 from datetime import datetime
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/"
 
 # Pydantic models for structured tool inputs
 class CreateTaskInput(BaseModel):
