@@ -10,58 +10,59 @@ from langchain_ollama import OllamaLLM
 from langchain_core.tools import StructuredTool
 from langgraph.graph import StateGraph, END
 
-# Import the GoogleTasks client and the input schemas from the new file
+# --- UPDATED IMPORTS ---
 from task_tools import (
-    google_tasks_client, parse_date,
+    task_create_wrapper, task_update_wrapper, task_delete_wrapper, 
+    task_list_wrapper, task_search_wrapper, task_read_wrapper, 
+    parse_date_wrapper,
     CreateTaskInput, UpdateTaskInput, DeleteTaskInput, 
     ListTasksInput, SearchTasksInput, ReadTaskInput, ParseDateInput
 )
 
 # 1. Define LLM, Tools, and Agent outside the graph nodes
-# Note: Ensure your Ollama server is running at this address.
 # os.environ["OLLAMA_BASE_URL"] = "http://batman.local:11434" # Assuming this is set externally or via env var
-llm = OllamaLLM(model="llama3.2:1b", temperature=0.0)
+llm = OllamaLLM(model="llama3.2:1b", temperature=0.0) # Ensure your LLM model is correct
 
-# 2. Define Tools using the GoogleTasks client methods
+# 2. Define Tools using the wrapper functions
 tools = [
     StructuredTool.from_function(
-        func=google_tasks_client.create_task,
+        func=task_create_wrapper, # FIX: Use the wrapper function
         name="create_task",
         description="Creates a new Google Task with a title, notes, and an optional due date in YYYY-MM-DD format. The LLM must first call the parse_date tool to get the correct format if the user provides a natural language date.",
         args_schema=CreateTaskInput
     ),
     StructuredTool.from_function(
-        func=google_tasks_client.update_task,
+        func=task_update_wrapper, # FIX: Use the wrapper function
         name="update_task",
         description="Updates a Google Task. Requires the task_id. Can update the title, notes, status ('completed' or 'needsAction'), or due date.",
         args_schema=UpdateTaskInput
     ),
     StructuredTool.from_function(
-        func=google_tasks_client.delete_task,
+        func=task_delete_wrapper, # FIX: Use the wrapper function
         name="delete_task",
         description="Deletes a Google Task. Requires the task_id.",
         args_schema=DeleteTaskInput
     ),
     StructuredTool.from_function(
-        func=google_tasks_client.list_tasks,
+        func=task_list_wrapper, # FIX: Use the wrapper function
         name="list_tasks",
         description="Lists all Google Tasks, optionally filtered by due date (YYYY-MM-DD).",
         args_schema=ListTasksInput
     ),
     StructuredTool.from_function(
-        func=google_tasks_client.search_tasks,
+        func=task_search_wrapper, # FIX: Use the wrapper function
         name="search_tasks",
         description="Searches for a specific task by a keyword in its title. Can be filtered by an optional due date (YYYY-MM-DD).",
         args_schema=SearchTasksInput
     ),
     StructuredTool.from_function(
-        func=google_tasks_client.get_task_by_id,
+        func=task_read_wrapper, # FIX: Use the wrapper function
         name="read_task",
         description="Reads a single Google Task by its ID. Requires the task_id.",
         args_schema=ReadTaskInput
     ),
     StructuredTool.from_function(
-        func=parse_date,
+        func=parse_date_wrapper, # FIX: Use the wrapper function
         name="parse_date",
         description="Converts a natural language date (e.g., 'today', 'tomorrow', 'next week') into a YYYY-MM-DD string. Always use this tool before calling `create_task` or `update_task` if the user provides a natural language date.",
         args_schema=ParseDateInput
@@ -168,10 +169,10 @@ def execute_tools(state: AgentState):
     for tool in tools:
         if tool.name == tool_name:
             if isinstance(tool_input, dict):
-                # Pass dictionary arguments using **
+                # This correctly unpacks the dict into keyword arguments (e.g., title=...)
                 result = tool.run(**tool_input)
             else:
-                # Pass simple string argument directly
+                # This handles single string inputs (like the date_string in parse_date)
                 result = tool.run(tool_input)
             return {"intermediate_steps": [(action, str(result))]}
     
@@ -207,12 +208,8 @@ if __name__ == "__main__":
             if user_input.lower() in ['exit', 'quit']:
                 break
             
-            # Stream the results from the graph
             for s in app.stream({"input": user_input, "intermediate_steps": []}):
                 if "__end__" in s:
                     print("\nAssistant:", s["__end__"]["agent_outcome"]["output"])
-                # Optional: Print intermediate steps for debugging
-                # else:
-                #     print(s)
         except Exception as e:
             print(f"An error occurred: {e}")
