@@ -18,8 +18,8 @@ html, body {
 /* 2. Main App Window: Fixed Size and Flex Container */
 .main-app-window {
     /* Set the requested fixed dimensions */
-    width: 768px; /* Use width for more precise control than max-width */
-    height: 1024px; /* Use height for more precise control than max-height */
+    width: 768px; 
+    height: 1024px; 
     
     /* Apply Flexbox to stack header/content/footer vertically */
     display: flex;
@@ -28,14 +28,15 @@ html, body {
     /* Styling for the app window look */
     box-shadow: 0 4px 10px 0 rgba(0,0,0,0.2), 0 4px 20px 0 rgba(0,0,0,0.19);
     background-color: white; 
-    padding: 0; /* Remove default padding to let header/footer touch edges */
+    padding: 0; /* Remove default padding for clean edges */
 }
 
-/* 3. Header/Footer are Fixed Height (no special flex properties needed) */
+/* 3. Header/Footer are Fixed Height */
 header {
-    /* Add padding/margin that was previously on the main container */
+    /* Add padding back for the header content */
     padding-top: 16px;
     padding-bottom: 16px;
+    flex-shrink: 0; /* Ensures header never shrinks */
 }
 .input-footer {
     padding-top: 16px !important; 
@@ -47,13 +48,14 @@ header {
 /* 4. Scrollable Middle Section */
 .scrollable-content {
     flex-grow: 1; /* This makes the section take up ALL available space */
-    overflow-y: auto; /* This enables vertical scrolling inside this section */
+    overflow-y: auto; /* This enables vertical scrolling ONLY inside this section */
     padding: 16px; /* Add internal padding for the task list */
 }
 
 /* 5. Task Item Styling (Minimal - for layout only) */
 .task-item {
     cursor: pointer;
+    /* Ensure borders and padding are applied consistently */
     padding: 8px;
     margin-bottom: 8px;
     border-left: 6px solid transparent; 
@@ -61,10 +63,15 @@ header {
 }
 .completed {
     text-decoration: line-through;
+    color: #888; /* Keeping color for legibility of line-through text */
 }
 .close-btn {
+    /* Keep layout properties for positioning */
     float: right;
     font-weight: bold;
     font-size: 20px;
     line-height: 18px;
+}
+.close-btn:hover {
+    color: black;
 }
