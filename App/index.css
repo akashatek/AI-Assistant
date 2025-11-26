@@ -1,0 +1,13 @@
+body {
+    max-width: 1080px; /* Set your desired max-width */
+    margin: auto; /* Center the content */
+    max-height: 1920px; /* Set your desired max-height */
+    overflow-y: auto; /* Enable vertical scrolling if content exceeds max-height */
+}
+
+.center-flex-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Full viewport height */
+}
