@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Task Manager - Fixed Header/Footer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-deep-purple.css">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<div class="w3-container main-app-window">
+    
+    <header class="w3-container w3-theme-d5 w3-center">
+        <h2>Task Manager</h2>
+    </header>
+
+    <div class="scrollable-content">
+        <ul class="w3-ul w3-card-4" id="taskList">
+            </ul>
+    </div>
+    
+    <div class="w3-row-padding input-footer">
+        <div class="w3-half">
+            <input class="w3-input w3-border" id="taskInput" type="text" placeholder="New Task...">
+        </div>
+        <div class="w3-half">
+            <button onclick="addTask()" class="w3-button w3-theme w3-block">Add Task</button>
+        </div>
+    </div>
+
+</div>
+
+<script src="index.js"></script>
+
+</body>
+</html>

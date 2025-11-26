@@ -1,0 +1,70 @@
+/*
+ * index.css
+ * Flexbox setup for Fixed Header/Footer with Scrollable Content.
+ */
+
+/* 1. Reset body and center the main app window */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f1f1f1; 
+    /* Center body content if the screen is larger than the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 2. Main App Window: Fixed Size and Flex Container */
+.main-app-window {
+    /* Set the requested fixed dimensions */
+    width: 768px; /* Use width for more precise control than max-width */
+    height: 1024px; /* Use height for more precise control than max-height */
+    
+    /* Apply Flexbox to stack header/content/footer vertically */
+    display: flex;
+    flex-direction: column;
+    
+    /* Styling for the app window look */
+    box-shadow: 0 4px 10px 0 rgba(0,0,0,0.2), 0 4px 20px 0 rgba(0,0,0,0.19);
+    background-color: white; 
+    padding: 0; /* Remove default padding to let header/footer touch edges */
+}
+
+/* 3. Header/Footer are Fixed Height (no special flex properties needed) */
+header {
+    /* Add padding/margin that was previously on the main container */
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+.input-footer {
+    padding-top: 16px !important; 
+    padding-bottom: 16px !important;
+    border-top: 1px solid #eee; /* Separator line */
+    flex-shrink: 0; /* Ensures footer never shrinks */
+}
+
+/* 4. Scrollable Middle Section */
+.scrollable-content {
+    flex-grow: 1; /* This makes the section take up ALL available space */
+    overflow-y: auto; /* This enables vertical scrolling inside this section */
+    padding: 16px; /* Add internal padding for the task list */
+}
+
+/* 5. Task Item Styling (Minimal - for layout only) */
+.task-item {
+    cursor: pointer;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-left: 6px solid transparent; 
+    transition: 0.3s;
+}
+.completed {
+    text-decoration: line-through;
+}
+.close-btn {
+    float: right;
+    font-weight: bold;
+    font-size: 20px;
+    line-height: 18px;
+}
